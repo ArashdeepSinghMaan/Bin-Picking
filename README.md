@@ -5,7 +5,9 @@ Steps to Build this project on your system
 2. basic_robot contains launch files to get robot in the bin-picking world. copy in src and built it.
 3. pose__estimation package has a node to which saves depth images and point clouds from camera feed. copy in src and built it.
 4. yolo package has a node which detects objects from rgb image of camera. copy in src and built it.
-5. 
+5. mycobot_moveit_config_manual_setup contains moveit configuration files.
 
 For GPD Refer to https://github.com/atenpas/gpd
+
+intel realsense folder has files for camera model, you can place it in ~/.gazebo/models folder.
 
