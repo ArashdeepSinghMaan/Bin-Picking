@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# Merged launch file to initialize a Gazebo environment with a robotic arm and MoveIt for motion planning
+
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
+from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.substitutions import FindPackageShare
+
+
+def generate_launch_description():
+    # Package and file paths
+    package_name_description = 'mycobot_description'
+    package_name_gazebo = 'mycobot_gazebo'
+    package_name_moveit = 'mycobot_moveit_config_manual_setup'
+    pkg_basic_robot = get_package_share_directory('basic_robot')
+    pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
+
+    # File paths for Gazebo, RViz, URDF, and world file
+    default_robot_name = 'mycobot_280'
+    rviz_config_file_path = 'rviz/mycobot_280_arduino_view_description.rviz'
+    urdf_file_path = 'urdf/mycobot_280_classic_gazebo.urdf.xacro'
+    world_file_path = 'worlds/simple.world'
+    moveit_config_file_path = 'launch/move_group.launch.py'  # Adjust according to your MoveIt package structure
+
+    pkg_share_description = FindPackageShare(package=package_name_description).find(package_name_description)
+    pkg_share_gazebo = FindPackageShare(package=package_name_gazebo).find(package_name_gazebo)
+    pkg_share_moveit = FindPackageShare(package=package_name_moveit).find(package_name_moveit)
+
+    default_rviz_config_path = os.path.join(pkg_share_description, rviz_config_file_path)
+    default_urdf_model_path = os.path.join(pkg_share_gazebo, urdf_file_path)
+    gazebo_models_path = os.path.join(pkg_share_gazebo, 'models')
+    world_path = os.path.join(pkg_basic_robot, world_file_path)
+    moveit_config_path = os.path.join(pkg_share_moveit, moveit_config_file_path)
+
+    # Launch configurations
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    headless = LaunchConfiguration('headless', default='False')
+    x_pose = LaunchConfiguration('x_pose', default='0.0')
+    y_pose = LaunchConfiguration('y_pose', default='0.0')
+
+    # Declare launch arguments
+    declare_robot_name_cmd = DeclareLaunchArgument(
+        name='robot_name',
+        default_value=default_robot_name,
+        description='The name for the robot')
+
+    declare_rviz_config_file_cmd = DeclareLaunchArgument(
+        name='rviz_config_file',
+        default_value=default_rviz_config_path,
+        description='Full path to the RVIZ config file to use')
+
+    declare_urdf_model_path_cmd = DeclareLaunchArgument(
+        name='urdf_model',
+        default_value=default_urdf_model_path,
+        description='Absolute path to robot urdf file')
+
+    declare_world_cmd = DeclareLaunchArgument(
+        name='world',
+        default_value=world_path,
+        description='Full path to the world model file to load')
+
+    # Set environment variable for Gazebo models
+    set_env_vars_resources = AppendEnvironmentVariable(
+        'GAZEBO_MODEL_PATH',
+        gazebo_models_path)
+
+    # Start Gazebo server with the specified world
+    gzserver_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')),
+        launch_arguments={'world': world_path}.items()
+    )
+
+    # Start Gazebo client (if not in headless mode)
+    gzclient_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')),
+        condition=IfCondition(PythonExpression([headless, ' == False']))
+    )
+
+    # Start the robot state publisher
+    robot_description_content = ParameterValue(Command(['xacro ', default_urdf_model_path]), value_type=str)
+    start_robot_state_publisher_cmd = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'robot_description': robot_description_content}]
+    )
+
+    # Spawn the robotic arm in the Gazebo environment
+    start_gazebo_ros_spawner_cmd = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=[
+            '-entity', default_robot_name,
+            '-topic', "robot_description",
+            '-x', x_pose,
+            '-y', y_pose,
+            '-z', '0.05'  # Adjust z-axis for the arm height
+        ],
+        output='screen'
+    )
+
+    # Launch RViz (optional)
+    start_rviz_cmd = Node(
+        condition=IfCondition(LaunchConfiguration('use_rviz', default='True')),
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', default_rviz_config_path]
+    )
+
+    # Start MoveIt for motion planning
+    start_moveit_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(moveit_config_path),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
+    # Create the launch description and populate it
+    ld = LaunchDescription()
+
+    # Add launch configurations and actions
+    ld.add_action(declare_robot_name_cmd)
+    ld.add_action(declare_rviz_config_file_cmd)
+    ld.add_action(declare_urdf_model_path_cmd)
+    ld.add_action(declare_world_cmd)
+    ld.add_action(set_env_vars_resources)
+    ld.add_action(gzserver_cmd)
+    ld.add_action(gzclient_cmd)
+    ld.add_action(start_robot_state_publisher_cmd)
+    ld.add_action(start_gazebo_ros_spawner_cmd)
+    ld.add_action(start_rviz_cmd)
+    ld.add_action(start_moveit_cmd)
+
+    return ld
+
