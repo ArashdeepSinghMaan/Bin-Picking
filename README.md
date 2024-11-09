@@ -1,4 +1,5 @@
-# Bin-Picking
+#  Robot Arm bin picking using Depth Camera, YOLOv5,GPD, ROS2
+This project presents an integrated robotic bin-picking system that uses advanced computer vision techniques and ROS2 for real-time object detection, pose estimation, and grasp planning. The system utilizes YOLO for detecting objects in RGB images, Point Cloud Library (PCL) for estimating the orientation and position  from depth data, and Grasp Pose Detection (GPD) calculate grasp points. These components enable the robot to perform efficient and reliable pick-and-place tasks. The entire process is modularized within ROS2, ensuring smooth communication MoveIt! is used for motion planning and execution.
 Robot Arm bin picking using Depth Camera, YOLOv5,GPD
 Steps to Build this project on your system
 1. mycobot_gazebo is a package containing description for robotic arm. copy in src and built it.
