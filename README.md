@@ -33,15 +33,6 @@ The Pose Estimation Node uses PCL to determine the 6-DOF pose of detected object
 The GPD Node generates grasp poses from point clouds.
 
 The MoveIt2 Node plans and executes the robot’s pick-and-place motions.
-```mermaid
-flowchart TD
-    A[RGB-D Camera (Intel RealSense)] -->|RGB| B[YOLOv5 Object Detection Node]
-    A -->|Depth Data| C[Pose Estimation Node (PCL)]
-    B --> D[Grasp Pose Detection Node (GPD)]
-    C --> D
-    D --> E[MoveIt2 Motion Planning]
-    E --> F[Robot Arm Execution]
-```
 
 ---
 
