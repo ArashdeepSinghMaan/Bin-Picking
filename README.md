@@ -278,6 +278,4 @@ By combining computer vision with motion planning, it lays the groundwork for de
 
 ---
 
-## 📜 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
