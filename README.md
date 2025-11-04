@@ -22,7 +22,17 @@ The system is tested in **Gazebo** simulation using **MyCobot** and **UR5** robo
 ## 🏷️ Project Workflow
 
 ### 🧩 System Architecture
+Pipeline Overview:
 
+The RGB-D camera captures color and depth data.
+
+The YOLOv5 Node detects and classifies objects from the RGB stream.
+
+The Pose Estimation Node uses PCL to determine the 6-DOF pose of detected objects.
+
+The GPD Node generates grasp poses from point clouds.
+
+The MoveIt2 Node plans and executes the robot’s pick-and-place motions.
 ```mermaid
 flowchart TD
     A[RGB-D Camera (Intel RealSense)] -->|RGB| B[YOLOv5 Object Detection Node]
